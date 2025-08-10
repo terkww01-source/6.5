@@ -1,0 +1,92 @@
+
+# Render.com deployment configuration for System Control Dashboard
+services:
+  - type: web
+    name: system-control-dashboard
+    env: python
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+    startCommand: |
+      gunicorn --bind 0.0.0.0:10000 --workers 4 --worker-class sync --timeout 120 wsgi:application
+    
+    # Environment variables
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      
+      - key: SECRET_KEY
+        generateValue: true
+      
+      - key: AGENT_TOKEN
+        generateValue: true
+      
+      - key: ADMIN_USERNAME
+        value: admin
+      
+      - key: ADMIN_PASSWORD
+        value: admin123change
+      
+      - key: DATABASE_PATH
+        value: dashboard.db
+      
+      - key: UPLOAD_FOLDER
+        value: uploads
+      
+      - key: SESSION_TIMEOUT
+        value: "3600"
+      
+      - key: SESSION_COOKIE_SECURE
+        value: "true"
+      
+      - key: CLIENT_TIMEOUT
+        value: "300"
+      
+      - key: MAX_CLIENTS
+        value: "100"
+      
+      - key: HEARTBEAT_INTERVAL
+        value: "30"
+      
+      - key: SOCKETIO_PING_TIMEOUT
+        value: "60"
+      
+      - key: SOCKETIO_PING_INTERVAL
+        value: "25"
+      
+      - key: SOCKETIO_CORS_ALLOWED_ORIGINS
+        value: "*"
+      
+      - key: BACKUP_RETENTION_DAYS
+        value: "30"
+      
+      - key: LOG_RETENTION_DAYS
+        value: "7"
+      
+      - key: COMMAND_RETENTION_DAYS
+        value: "14"
+      
+      - key: FORCE_HTTPS
+        value: "true"
+      
+      - key: LOG_LEVEL
+        value: INFO
+      
+      - key: LOG_FILE
+        value: dashboard.log
+      
+      - key: CLEANUP_INTERVAL
+        value: "300"
+      
+      - key: HEALTH_CHECK_INTERVAL
+        value: "60"
+      
+      - key: PORT
+        value: "10000"
+      
+      - key: HOST
+        value: "0.0.0.0"
+    
+    healthCheckPath: /api/health
+    autoDeploy: true
+    plan: starter

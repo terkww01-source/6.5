@@ -1,0 +1,51 @@
+
+# Flask framework and extensions
+Flask==2.3.3
+Flask-SocketIO==5.3.6
+
+# WebSocket and real-time communication
+python-socketio==5.9.0
+python-engineio==4.7.1
+
+# Security and authentication
+Werkzeug==2.3.7
+
+# HTTP requests and data handling
+requests==2.31.0
+
+# System monitoring and utilities
+psutil==5.9.6
+
+# Crypto and security
+pycryptodome==3.19.0
+
+# Date and time handling
+python-dateutil==2.8.2
+
+# JSON and data processing
+ujson==5.10.0
+
+# File handling and compression
+Pillow==10.4.0
+
+# Threading and async support (removed eventlet due to Python 3.13 incompatibility)
+# eventlet==0.33.3
+
+# Environment and configuration
+python-dotenv==1.0.0
+
+# Logging and monitoring
+structlog==23.2.0
+
+# Production WSGI server
+gunicorn==21.2.0
+
+# Additional utilities
+click==8.1.7
+itsdangerous==2.1.2
+Jinja2==3.1.2
+MarkupSafe==2.1.3
+
+# Optional: For better performance  
+gevent==24.10.3
+gevent-websocket==0.10.1

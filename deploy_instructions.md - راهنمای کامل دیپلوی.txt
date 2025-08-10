@@ -1,0 +1,484 @@
+# راهنمای کامل دیپلوی System Control Dashboard
+
+## فهرست مطالب
+1. [پیش‌نیازها](#پیش-نیازها)
+2. [آماده‌سازی پروژه](#آماده-سازی-پروژه)
+3. [دیپلوی روی Render.com](#دیپلوی-روی-rendercom)
+4. [پیکربندی کلاینت‌ها](#پیکربندی-کلاینت-ها)
+5. [تست و عیب‌یابی](#تست-و-عیب-یابی)
+6. [امنیت و تنظیمات](#امنیت-و-تنظیمات)
+7. [نگهداری و آپدیت](#نگهداری-و-آپدیت)
+
+---
+
+## 🚀 پیش‌نیازها
+
+### سرور (Dashboard)
+- حساب کاربری در [Render.com](https://render.com)
+- دسترسی به GitHub/GitLab
+- دامنه اختیاری برای HTTPS
+
+### کلاینت (Agent)
+- ویندوز 10/11
+- Python 3.8+ نصب شده
+- دسترسی اینترنت برای اتصال به سرور
+- دسترسی Administrator برای دسترسی کامل به سیستم
+
+---
+
+## 📁 آماده‌سازی پروژه
+
+### 1. ساختار فایل‌ها
+```
+project/
+├── server_dashboard.py     # سرور اصلی
+├── client_agent.py        # کلاینت Agent
+├── config.py              # تنظیمات
+├── requirements.txt       # وابستگی‌های سرور
+├── gunicorn.conf.py      # تنظیمات Gunicorn
+├── render.yaml           # تنظیمات Render
+├── deploy_instructions.md # این فایل
+└── client_requirements.txt # وابستگی‌های کلاینت
+```
+
+### 2. ایجاد client_requirements.txt
+```txt
+# Client Agent Requirements
+requests==2.31.0
+psutil==5.9.6
+pycryptodome==3.19.0
+python-socketio==5.9.0
+pywin32==306  # فقط برای ویندوز
+GPUtil==1.4.0  # اختیاری
+```
+
+### 3. آپلود به Git Repository
+```bash
+git init
+git add .
+git commit -m "Initial commit: System Control Dashboard"
+git branch -M main
+git remote add origin https://github.com/yourusername/system-control.git
+git push -u origin main
+```
+
+---
+
+## 🌐 دیپلوی روی Render.com
+
+### مرحله 1: ایجاد Web Service
+
+1. **ورود به Render Dashboard**
+   - به https://render.com برو
+   - روی "New +" کلیک کن
+   - "Web Service" را انتخاب کن
+
+2. **اتصال Repository**
+   - Repository خودت را انتخاب کن
+   - Branch: `main`
+   - Root Directory: خالی بذار
+
+3. **تنظیمات پایه**
+   ```
+   Name: system-control-dashboard
+   Environment: Python
+   Build Command: pip install -r requirements.txt
+   Start Command: python -m gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT server_dashboard:app
+   ```
+
+### مرحله 2: تنظیم متغیرهای محیطی
+
+**متغیرهای ضروری:**
+```env
+FLASK_ENV=production
+SECRET_KEY=your-super-secret-key-here-min-32-chars
+AGENT_TOKEN=your-secure-agent-token-here
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your-secure-password-here
+```
+
+**متغیرهای اختیاری:**
+```env
+SESSION_TIMEOUT=3600
+CLIENT_TIMEOUT=300
+MAX_CLIENTS=100
+BACKUP_RETENTION_DAYS=30
+LOG_LEVEL=INFO
+```
+
+### مرحله 3: تولید Token های امن
+
+**برای تولید SECRET_KEY:**
+```python
+import secrets
+print(secrets.token_urlsafe(32))
+```
+
+**برای تولید AGENT_TOKEN:**
+```python
+import secrets
+print(secrets.token_urlsafe(24))
+```
+
+### مرحله 4: تنظیم Disk Storage
+
+1. در Render Dashboard به سرویست برو
+2. تب "Settings" → "Disk"
+3. "Add Disk" کلیک کن:
+   ```
+   Name: dashboard-data
+   Mount Path: /opt/render/project/src
+   Size: 10GB (حداقل)
+   ```
+
+### مرحله 5: دیپلوی
+
+1. روی "Create Web Service" کلیک کن
+2. منتظر بمان تا build تمام شه (۵-۱۰ دقیقه)
+3. URL سرویست رو کپی کن (مثل: `https://your-app.onrender.com`)
+
+---
+
+## 🖥️ پیکربندی کلاینت‌ها
+
+### مرحله 1: آماده‌سازی فایل Agent
+
+1. **دانلود فایل‌ها روی سیستم کلاینت:**
+   - `client_agent.py`
+   - `client_requirements.txt`
+
+2. **نصب وابستگی‌ها:**
+   ```cmd
+   pip install -r client_requirements.txt
+   ```
+
+### مرحله 2: پیکربندی Agent
+
+**ویرایش فایل client_agent.py - بخش CONFIG:**
+```python
+CONFIG = {
+    "SERVER_URL": "https://your-app.onrender.com",  # URL سرور شما
+    "API_URL": "https://your-app.onrender.com/api",
+    "AGENT_TOKEN": "your-secure-agent-token-here",  # همان token سرور
+    "CLIENT_NAME": "Office-PC-01",  # نام منحصربه‌فرد
+    # باقی تنظیمات...
+}
+```
+
+### مرحله 3: اجرای Agent
+
+**اجرای دستی (تست):**
+```cmd
+python client_agent.py
+```
+
+**اجرای در پس‌زمینه:**
+```cmd
+python client_agent.py --config agent_config.json
+```
+
+**ایجاد Service (ویندوز):**
+```cmd
+# نصب پکیج pywin32
+pip install pywin32
+
+# ثبت به عنوان سرویس
+python client_agent.py --install-service
+```
+
+### مرحله 4: فایل پیکربندی جداگانه
+
+**ایجاد agent_config.json:**
+```json
+{
+    "SERVER_URL": "https://your-app.onrender.com",
+    "API_URL": "https://your-app.onrender.com/api", 
+    "AGENT_TOKEN": "your-secure-agent-token-here",
+    "CLIENT_NAME": "Office-PC-01",
+    "RECONNECT_DELAY": 5,
+    "HEARTBEAT_INTERVAL": 30,
+    "LOG_LEVEL": "INFO"
+}
+```
+
+---
+
+## 🧪 تست و عیب‌یابی
+
+### تست اتصال سرور
+
+1. **مرحله 1: بررسی سرور**
+   - به `https://your-app.onrender.com` برو
+   - باید صفحه لاگین ببینی
+   - Username: `admin`, Password: پسوردت
+
+2. **مرحله 2: تست API**
+   ```bash
+   curl -X GET https://your-app.onrender.com/api/health
+   # باید جواب 200 OK بگیری
+   ```
+
+3. **مرحله 3: بررسی Log ها**
+   - در Render Dashboard → Logs
+   - دنبال پیام "System Control Dashboard server is ready" بگرد
+
+### تست اتصال کلاینت
+
+1. **اجرای Agent در حالت Debug:**
+   ```cmd
+   python client_agent.py --log-level DEBUG
+   ```
+
+2. **بررسی پیام‌های اتصال:**
+   ```
+   INFO - Connecting to server: https://your-app.onrender.com
+   INFO - Agent connected: xxxxx
+   INFO - Client registered via Socket.IO: xxxxx
+   ```
+
+3. **تست از طریق Dashboard:**
+   - وارد پنل وب شو
+   - تب "Clients" → باید کلاینت متصل رو ببینی
+   - روی "View" کلیک کن و فرمان تست بفرست
+
+### مشکلات رایج و راه‌حل
+
+**❌ کلاینت وصل نمیشه:**
+```python
+# بررسی تنظیمات
+print("Server URL:", CONFIG["SERVER_URL"])
+print("Agent Token:", CONFIG["AGENT_TOKEN"][:10] + "...")
+```
+
+**❌ خطای Authentication:**
+- Agent Token در سرور و کلاینت باید یکسان باشه
+- Token حداقل 16 کاراکتر باشه
+
+**❌ خطای Permission:**
+- Agent رو با Administrator اجرا کن
+- Antivirus رو موقتاً غیرفعال کن
+
+**❌ خطای Network:**
+```cmd
+# تست اتصال
+telnet your-app.onrender.com 443
+ping your-app.onrender.com
+```
+
+---
+
+## 🔐 امنیت و تنظیمات
+
+### امنیت سرور
+
+1. **تغییر پسوردهای پیش‌فرض:**
+   ```env
+   ADMIN_PASSWORD=your-very-secure-password-here
+   AGENT_TOKEN=your-32-char-secure-token-here
+   ```
+
+2. **فعال‌سازی HTTPS:**
+   ```env
+   FORCE_HTTPS=true
+   SESSION_COOKIE_SECURE=true
+   ```
+
+3. **محدودیت IP (اختیاری):**
+   ```python
+   # در config.py
+   TRUSTED_PROXIES = ["1.2.3.4", "5.6.7.8"]
+   ```
+
+### امنیت کلاینت
+
+1. **محدود کردن دسترسی:**
+   ```python
+   # فقط برای IP های مشخص
+   ALLOWED_SERVERS = ["your-app.onrender.com"]
+   ```
+
+2. **رمزنگاری فایل‌ها:**
+   ```python
+   CONFIG["BACKUP_FORMATS"]["encrypt"] = True
+   ```
+
+3. **حذف خودکار:**
+   ```python
+   # حذف Agent بعد از مدت مشخص
+   AUTO_CLEANUP_DAYS = 30
+   ```
+
+### تنظیمات فایروال
+
+**ویندوز Firewall:**
+```cmd
+# اجازه اتصال خروجی برای Python
+netsh advfirewall firewall add rule name="Python Agent" dir=out action=allow program="C:\Python\python.exe"
+```
+
+---
+
+## 🔧 نگهداری و آپدیت
+
+### آپدیت سرور
+
+1. **آپدیت کد:**
+   ```bash
+   git add .
+   git commit -m "Update: new features"
+   git push origin main
+   ```
+
+2. **Render خودکار دیپلوی میکنه**
+   - در صورت نیاز Manual Deploy کن
+
+### آپدیت کلاینت‌ها
+
+1. **آپدیت دستی:**
+   ```cmd
+   # متوقف کردن Agent
+   taskkill /F /IM python.exe
+   
+   # جایگزینی فایل جدید
+   copy new_client_agent.py client_agent.py
+   
+   # اجرای مجدد
+   python client_agent.py
+   ```
+
+2. **آپدیت خودکار (پیشرفته):**
+   ```python
+   # اضافه کردن به Agent
+   def auto_update():
+       # دانلود و جایگزینی خودکار
+       pass
+   ```
+
+### نظارت و Log
+
+1. **لاگ‌های سرور:**
+   - Render Dashboard → Logs
+   - دانلود لاگ‌ها برای آنالیز
+
+2. **لاگ‌های کلاینت:**
+   ```python
+   # مسیر فایل لاگ
+   LOG_FILE = "system_agent.log"
+   
+   # تنظیم سطح لاگ
+   LOG_LEVEL = "INFO"  # DEBUG, INFO, WARNING, ERROR
+   ```
+
+3. **نظارت بر عملکرد:**
+   - CPU و Memory usage
+   - تعداد کلاینت‌های متصل  
+   - حجم دیتای جمع‌آوری شده
+
+### پشتیبان‌گیری
+
+1. **پشتیبان پایگاه داده:**
+   ```python
+   # اجرا در سرور
+   python -c "
+   import shutil
+   shutil.copy('dashboard.db', 'backup/dashboard_$(date +%Y%m%d).db')
+   "
+   ```
+
+2. **پشتیبان فایل‌های آپلود شده:**
+   ```bash
+   # از Render SSH (اگر در دسترس باشه)
+   tar -czf uploads_backup.tar.gz uploads/
+   ```
+
+### عیب‌یابی پیشرفته
+
+1. **فعال‌سازی Debug Mode:**
+   ```env
+   FLASK_ENV=development
+   LOG_LEVEL=DEBUG
+   ```
+
+2. **بررسی اتصالات:**
+   ```python
+   # اضافه به dashboard
+   @app.route('/debug/connections')
+   def debug_connections():
+       return jsonify(client_manager.clients)
+   ```
+
+3. **مانیتورینگ Real-time:**
+   ```javascript
+   // اضافه به template ها
+   socket.on('debug_info', function(data) {
+       console.log('Debug:', data);
+   });
+   ```
+
+---
+
+## 🆘 پشتیبانی و سوالات
+
+### مشکلات رایج
+
+1. **Agent متصل نمیشه**
+   - بررسی کن که AGENT_TOKEN درست باشه
+   - فایروال رو چک کن
+   - Antivirus رو موقتاً خاموش کن
+
+2. **Dashboard لود نمیشه**
+   - بررسی کن که سرور روشن باشه
+   - لاگ‌های Render رو چک کن
+   - متغیرهای محیطی رو بررسی کن
+
+3. **خطای Database**
+   - فضای دیسک کافی داری؟
+   - دسترسی نوشتن روی directory هست؟
+
+### منابع بیشتر
+
+- [مستندات Flask-SocketIO](https://flask-socketio.readthedocs.io/)
+- [راهنمای Render.com](https://render.com/docs)
+- [امنیت Flask Applications](https://flask.palletsprojects.com/en/2.0.x/security/)
+
+### تماس برای پشتیبانی
+
+اگه مشکلی داشتی:
+1. لاگ‌های مربوطه رو جمع‌آوری کن
+2. مراحل انجام شده رو مستند کن  
+3. Error message کامل رو کپی کن
+4. نسخه Python و OS رو اعلام کن
+
+---
+
+## ✅ چک‌لیست نهایی
+
+### سرور (Dashboard)
+- [ ] کد روی Git آپلود شده
+- [ ] Render service ایجاد شده
+- [ ] متغیرهای محیطی تنظیم شده
+- [ ] AGENT_TOKEN تولید شده
+- [ ] ADMIN_PASSWORD تغییر کرده
+- [ ] Disk storage اضافه شده
+- [ ] سرور بدون خطا راه‌اندازی شده
+- [ ] Dashboard قابل دسترسی هست
+
+### کلاینت (Agent)
+- [ ] Python 3.8+ نصب شده
+- [ ] پکیج‌های مورد نیاز نصب شده
+- [ ] فایل client_agent.py دانلود شده
+- [ ] CONFIG بخش ویرایش شده
+- [ ] SERVER_URL درست تنظیم شده
+- [ ] AGENT_TOKEN مطابق سرور
+- [ ] Agent با موفقیت اتصال برقرار کرده
+- [ ] در Dashboard کلاینت دیده میشه
+
+### تست نهایی
+- [ ] لاگین به Dashboard موفق
+- [ ] لیست کلاینت‌ها نمایش داده میشه
+- [ ] ارسال فرمان تست موفق
+- [ ] دریافت پاسخ از کلاینت
+- [ ] آپلود فایل کار میکنه
+- [ ] لاگ‌ها ثبت میشن
+
+**🎉 تبریک! سیستم شما آماده استفاده است.**

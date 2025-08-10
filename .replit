@@ -1,0 +1,17 @@
+modules = ["python-3.12"]
+
+[nix]
+channel = "stable-25_05"
+packages = ["gmp", "iana-etc", "libev"]
+
+[workflows]
+runButton = "Run Server"
+
+[[workflows.workflow]]
+name = "Run Server"
+author = 46249337
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python server_dashboard.py"

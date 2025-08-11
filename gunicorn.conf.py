@@ -1,6 +1,5 @@
-# gunicorn.conf.py  (نسخه نهایی)
+# gunicorn.conf.py (FINAL)
 import os
-
 bind = f"0.0.0.0:{os.environ.get('PORT', '10000')}"
 workers = 1
 worker_class = "geventwebsocket.gunicorn.workers.GeventWebSocketWorker"

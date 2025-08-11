@@ -9,6 +9,14 @@ import multiprocessing
 import time
 import signal
 
+
+
+bind = f"0.0.0.0:{os.environ.get('PORT', '10000')}"
+workers = 1
+worker_class = "geventwebsocket.gunicorn.workers.GeventWebSocketWorker"
+timeout = 120
+loglevel = "info"
+
 # Server socket
 bind = f"0.0.0.0:{os.environ.get('PORT', '5000')}"
 backlog = 2048

@@ -1,32 +1,24 @@
-
-#!/usr/bin/env python3
-"""
-WSGI entry point for System Control Dashboard
-"""
-
-import os
-import sys
-
-
 # wsgi.py
-from server_dashboard import app  # Flask app instance
+import importlib
 
-# برای سازگاری با بعضی سرورها:
+mod = importlib.import_module("server_dashboard")
+
+# اول دنبال شیء اپ با نام‌های رایج می‌گردیم:
+for name in ("app", "application", "flask_app"):
+    if hasattr(mod, name):
+        app = getattr(mod, name)
+        break
+else:
+    # اگر کارخانهٔ ساخت اپ داری، صدا می‌زنیم:
+    for factory in ("create_app", "make_app"):
+        if hasattr(mod, factory):
+            app = getattr(mod, factory)()
+            break
+    else:
+        raise RuntimeError(
+            "در server_dashboard نه شیء app/application هست، نه create_app/make_app. "
+            "یک شیء Flask با نام app را اکسپورت کن یا یکی از این فانکشن‌ها را اضافه کن."
+        )
+
+# بعضی پلتفرم‌ها متغیر application می‌خواهند:
 application = app
-
-
-# Add current directory to Python path
-sys.path.insert(0, os.path.dirname(__file__))
-
-# Import the Flask app and SocketIO
-from server_dashboard import create_app
-
-# Create the Flask app
-app, socketio = create_app()
-
-# Export for gunicorn
-application = app
-
-if __name__ == "__main__":
-    # For development
-    socketio.run(app, host='0.0.0.0', port=5000, debug=False)

@@ -1,4 +1,4 @@
-# gunicorn.conf.py
+# gunicorn.conf.py  (نسخه نهایی)
 import os
 
 bind = f"0.0.0.0:{os.environ.get('PORT', '10000')}"

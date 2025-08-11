@@ -1,24 +1,13 @@
-# wsgi.py
-import importlib
+# wsgi.py  (نسخه نهایی)
+from server_dashboard import app as flask_app  # Flask instance
 
-mod = importlib.import_module("server_dashboard")
+try:
+    from server_dashboard import socketio  # Flask-SocketIO instance
+except Exception:
+    socketio = None
 
-# اول دنبال شیء اپ با نام‌های رایج می‌گردیم:
-for name in ("app", "application", "flask_app"):
-    if hasattr(mod, name):
-        app = getattr(mod, name)
-        break
-else:
-    # اگر کارخانهٔ ساخت اپ داری، صدا می‌زنیم:
-    for factory in ("create_app", "make_app"):
-        if hasattr(mod, factory):
-            app = getattr(mod, factory)()
-            break
-    else:
-        raise RuntimeError(
-            "در server_dashboard نه شیء app/application هست، نه create_app/make_app. "
-            "یک شیء Flask با نام app را اکسپورت کن یا یکی از این فانکشن‌ها را اضافه کن."
-        )
+# WSGI callable برای Gunicorn (اولویت با Socket.IO)
+app = socketio.wsgi_app if socketio is not None else flask_app.wsgi_app
 
-# بعضی پلتفرم‌ها متغیر application می‌خواهند:
+# برخی پلتفرم‌ها متغیر application را هم می‌خوانند
 application = app

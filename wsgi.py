@@ -7,6 +7,14 @@ WSGI entry point for System Control Dashboard
 import os
 import sys
 
+
+# wsgi.py
+from server_dashboard import app  # Flask app instance
+
+# برای سازگاری با بعضی سرورها:
+application = app
+
+
 # Add current directory to Python path
 sys.path.insert(0, os.path.dirname(__file__))
 
